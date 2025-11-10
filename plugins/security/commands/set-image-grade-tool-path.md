@@ -5,17 +5,17 @@ argument-hint: <path>
 
 ## Name
 
-security:set-tool-path
+security:set-image-grade-tool-path
 
 ## Synopsis
 
 ```
-/security:set-tool-path <path>
+/security:set-image-grade-tool-path <path>
 ```
 
 ## Description
 
-The `security:set-tool-path` command configures the location of the container-grade-reporter tool on your system. This is a one-time setup step that saves the tool's path to a configuration file, eliminating the need to specify it for each run.
+The `security:set-image-grade-tool-path` command configures the location of the container-grade-reporter tool on your system. This is a one-time setup step that saves the tool's path to a configuration file, eliminating the need to specify it for each run.
 
 The path is stored in `~/.config/ai-helpers/security-config.json` and is used by the `/security:image-grades` command to locate the tool.
 
@@ -76,17 +76,17 @@ Next steps:
 
 1. **Configure tool path**:
    ```
-   /security:set-tool-path ~/Code/container-grade-reporter
+   /security:set-image-grade-tool-path ~/Code/container-grade-reporter
    ```
 
 2. **Configure with absolute path**:
    ```
-   /security:set-tool-path /home/user/projects/container-grade-reporter
+   /security:set-image-grade-tool-path /home/user/projects/container-grade-reporter
    ```
 
 3. **Configure workspace-relative path**:
    ```
-   /security:set-tool-path ./container-grade-reporter
+   /security:set-image-grade-tool-path ./container-grade-reporter
    ```
 
 ## Arguments
@@ -100,7 +100,7 @@ Next steps:
 
 **Common errors:**
 
-- **Missing argument**: "Error: Path argument required. Usage: /security:set-tool-path <path>"
+- **Missing argument**: "Error: Path argument required. Usage: /security:set-image-grade-tool-path <path>"
 - **Path not found**: "Error: Path does not exist: /path/to/tool"
 - **Invalid tool directory**: "Error: Path does not contain container-grade-reporter files (main.py, requirements.txt, Makefile)"
 - **Permission issues**: "Error: Cannot create config directory ~/.config/ai-helpers/"

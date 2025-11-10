@@ -71,11 +71,11 @@ container-grade-reporter/
 
 ### Step 2: Configure Tool Path
 
-Use the `/security:set-tool-path` command to configure the tool location:
+Use the `/security:set-image-grade-tool-path` command to configure the tool location:
 
 ```bash
 # Set the path to where you cloned the repository
-/security:set-tool-path ~/Code/container-grade-reporter
+/security:set-image-grade-tool-path ~/Code/container-grade-reporter
 ```
 
 This saves the configuration to `~/.config/ai-helpers/security-config.json`:
@@ -87,7 +87,7 @@ This saves the configuration to `~/.config/ai-helpers/security-config.json`:
 
 **Alternative: Workspace-relative installation**
 
-If you don't use `/security:set-tool-path`, the `/security:image-grades` command will search:
+If you don't use `/security:set-image-grade-tool-path`, the `/security:image-grades` command will search:
 1. `./container-grade-reporter/` (current directory)
 2. `../container-grade-reporter/` (parent directory)
 
@@ -418,7 +418,7 @@ The `/security:image-grades` command implements this skill by:
 ```bash
 # One-time setup
 git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git ~/Code/container-grade-reporter
-/security:set-tool-path ~/Code/container-grade-reporter
+/security:set-image-grade-tool-path ~/Code/container-grade-reporter
 
 # Create config file (my-releases.yaml)
 # Then generate report
