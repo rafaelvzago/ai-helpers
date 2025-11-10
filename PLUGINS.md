@@ -166,11 +166,11 @@ See [plugins/prow-job/README.md](plugins/prow-job/README.md) for detailed docume
 
 ### Security Plugin
 
-CVE analysis and container image vulnerability scanning for Red Hat ecosystem
+Container vulnerability grade reporting using container-grade-reporter tool
 
 **Commands:**
-- **`/security:check-image-grade` `<image>`** - Check container image vulnerability grade using Red Hat Pyxis API
-- **`/security:search-cve` `<CVE-ID>`** - Search and analyze CVE details using Red Hat Security Data API
+- **`/security:image-grades` `<config.yaml>`** - Generate container vulnerability grade report using container-grade-reporter
+- **`/security:set-tool-path` `<path>`** - Configure the path to container-grade-reporter tool
 
 See [plugins/security/README.md](plugins/security/README.md) for detailed documentation.
 

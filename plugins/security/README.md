@@ -1,228 +1,451 @@
 # Security Plugin
 
-CVE analysis and container image vulnerability scanning for Red Hat ecosystem using official Red Hat APIs.
+Container vulnerability grade reporting for Red Hat ecosystem using the container-grade-reporter tool.
 
 ## Overview
 
-The Security plugin provides automated vulnerability assessment capabilities directly within the Claude Code environment. It integrates with Red Hat's official security data sources to provide instant vulnerability analysis, eliminating the need to leave your IDE for security research.
+The Security plugin provides automated vulnerability grade assessment for container images directly within Claude Code. It integrates with the container-grade-reporter tool, which fetches vulnerability data from Red Hat's Pyxis API, to provide instant vulnerability analysis without leaving your development environment.
 
 **Key capabilities:**
-- **Container vulnerability scanning** using Red Hat Pyxis API
-- **CVE information lookup** using Red Hat Security Data API
+- **Container vulnerability grading** using Red Hat Pyxis API
 - **Multi-architecture support** (amd64, arm64, ppc64le, s390x)
-- **Security-driven decision making** with grade-based recommendations
-- **Corporate environment compatibility** with SSL and proxy support
+- **Release-based tracking** for OSSM and other Red Hat products
+- **Automated reporting** with grade-focused summaries
+- **Corporate environment compatibility** with Kerberos authentication
 
-This plugin addresses critical developer workflow gaps by bringing security assessment into the development process, enabling proactive vulnerability management and security-informed architectural decisions.
+This plugin simplifies the workflow of checking container vulnerability grades by providing a single command interface to the powerful container-grade-reporter tool.
 
 ## Commands
 
-### `/security:check-image-grade`
+### `/security:set-tool-path`
 
-Query Red Hat Pyxis API to check container image vulnerability grades and security posture.
+Configure the location of the container-grade-reporter tool.
 
 **Usage:**
 ```
-/security:check-image-grade <image>
+/security:set-tool-path <path>
 ```
 
 **Examples:**
 ```bash
-# Check Red Hat UBI base image
-/security:check-image-grade registry.redhat.io/ubi8/ubi:latest
+# Configure tool path after cloning
+/security:set-tool-path ~/Code/container-grade-reporter
 
-# Analyze OpenShift component security
-/security:check-image-grade registry.redhat.io/openshift4/ose-kube-apiserver:v4.14
+# Configure with absolute path
+/security:set-tool-path /home/user/projects/container-grade-reporter
 
-# Check specific tagged version
-/security:check-image-grade registry.redhat.io/ubi9/ubi:9.3
+# Configure workspace-relative path
+/security:set-tool-path ./container-grade-reporter
 ```
 
-**Features:**
-- **Health grades**: A-F scale vulnerability assessment
-- **CVE breakdown**: Count by severity (Critical, Important, Moderate, Low)
-- **Multi-architecture analysis**: Grade consistency across architectures
-- **Remediation recommendations**: Actionable next steps based on findings
-- **Corporate authentication**: Kerberos keytab integration
+**What it does:**
+- Validates the tool directory exists and contains required files
+- Saves the path to `~/.config/ai-helpers/security-config.json`
+- Enables `/security:image-grades` to locate the tool automatically
 
-**Prerequisites:**
-- Red Hat Pyxis API access (requires keytab authentication)
-- Kerberos tools (kinit, klist)
-- Network access to pyxis.engineering.redhat.com
+### `/security:image-grades`
 
-### `/security:search-cve`
-
-Search and analyze CVE details using the Red Hat Security Data API.
+Generate container vulnerability grade report for configured releases and components.
 
 **Usage:**
 ```
-/security:search-cve <CVE-ID>
+/security:image-grades <config.yaml>
 ```
 
 **Examples:**
 ```bash
-# Analyze recent critical vulnerability
-/security:search-cve CVE-2024-3400
+# Generate report for OSSM releases
+/security:image-grades ~/ossm-releases.yaml
 
-# Research kernel security issue
-/security:search-cve CVE-2023-4623
-
-# Check container runtime vulnerability
-/security:search-cve CVE-2024-21626
-
-# Legacy vulnerability analysis
-/security:search-cve CVE-2014-0160
+# Generate report with specific configuration
+/security:image-grades ./configs/security-check.yaml
 ```
 
 **Features:**
-- **CVSS scoring**: Both v2 and v3 scores with risk interpretation
-- **Affected products**: Red Hat product impact analysis
-- **Security advisories**: Related RHSA, RHBA, RHEA references
-- **Timeline analysis**: Publication, modification, and fix dates
-- **Remediation guidance**: Patch availability and update recommendations
+- **Automated execution**: Runs container-grade-reporter tool via Makefile
+- **Grade visualization**: Color-coded grades (A-F scale with ✅⚠️❌ indicators)
+- **Multi-architecture analysis**: Shows architecture support and grade consistency
+- **Release organization**: Groups results by release for clarity
+- **Summary statistics**: Grade distribution and action items
 
-**Prerequisites:**
-- Network access to access.redhat.com (no authentication required)
-- Internet connectivity for NVD cross-references
+**Sample Output:**
+```
+🛡️ Container Vulnerability Report
+Generated: 2025-11-10 15:45:23
+
+Release: OSSM 3.1
+════════════════════════════════════════
+
+openshift-service-mesh/istio-cni-rhel9
+  1.26 → Grade: B ✅ | v1.26.5 | amd64,arm64,ppc64le,s390x | End: 2025-08-22
+
+openshift-service-mesh/kiali-rhel9
+  v2.11 → Grade: C ⚠️ | v2.11.3 | amd64,arm64 | End: 2025-06-15
+
+════════════════════════════════════════
+Summary: 2 repositories | Grades: 1×B, 1×C
+```
 
 ## Installation
 
-### From ai-helpers Marketplace
+### Prerequisites
+
+1. **Container Grade Reporter Tool**
+   - Clone from: https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter
+   - Requires Red Hat internal network access
+
+2. **Kerberos Authentication**
+   - Service account keytab file
+   - Default location: `~/ossm-report-sa.keytab`
+   - Or set `KEYTAB_PATH` environment variable
+
+3. **System Requirements**
+   - Python 3.11+ (Python 3.12 recommended)
+   - Git, curl, make
+   - Access to Red Hat Pyxis API
+
+### Setup
+
+**Step 1: Install Security Plugin**
 
 ```bash
-# Add the ai-helpers marketplace
+# Add ai-helpers marketplace
 /plugin marketplace add openshift-eng/ai-helpers
 
 # Install security plugin
 /plugin install security@ai-helpers
-
-# Verify installation
-/security:search-cve --help
 ```
 
-### Manual Installation (Development)
+**Step 2: Clone Container Grade Reporter**
 
 ```bash
-# Clone ai-helpers repository
-git clone https://github.com/openshift-eng/ai-helpers.git
-cd ai-helpers
-
-# Install in Claude Code
-mkdir -p ~/.claude/commands
-ln -s $(pwd) ~/.claude/commands/ai-helpers
-
-# Restart Claude Code to load plugins
+# Clone to your preferred location
+cd ~/Code
+git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git
 ```
+
+**Step 3: Configure Tool Path**
+
+```bash
+# Set the tool location
+/security:set-tool-path ~/Code/container-grade-reporter
+```
+
+**Step 4: Verify Keytab**
+
+Ensure your keytab file is available:
+```bash
+ls ~/ossm-report-sa.keytab
+
+# Or set custom location
+export KEYTAB_PATH=/path/to/your/keytab
+```
+
+## Configuration
+
+### YAML Configuration File Format
+
+Create a YAML file defining the releases and components to track:
+
+```yaml
+releases:
+  "OSSM 3.1":
+    components:
+      - repository: openshift-service-mesh/istio-cni-rhel9
+        minimal_tag: ["1.26"]
+      - repository: openshift-service-mesh/istio-pilot-rhel9
+        minimal_tag: ["1.26"]
+      - repository: openshift-service-mesh/kiali-rhel9
+        minimal_tag: ["v2.11"]
+        skip_tag: ["v2.10"]
+
+  "OSSM 2.6":
+    components:
+      - repository: openshift-service-mesh/pilot-rhel8
+        minimal_tag: ["2.6"]
+      - repository: openshift-service-mesh/kiali-rhel8
+        minimal_tag: ["v1.73"]
+```
+
+**Configuration Fields:**
+
+- `releases`: Top-level container for release definitions
+- `"Release Name"`: User-friendly name (e.g., "OSSM 3.1", "RHEL 9.3")
+- `components`: List of container repositories to check
+- `repository`: Repository path (registry.access.redhat.com is implied)
+- `minimal_tag`: Minimum version tags to include (filters older versions)
+- `skip_tag`: (Optional) Specific tags to exclude
+
+**Tag Filtering:**
+
+- `minimal_tag: ["1.26"]` includes versions >= 1.26
+- `skip_tag: ["v2.10"]` excludes v2.10 and all patch versions
+- Both v-prefixed and non-prefixed variants are matched
 
 ## Authentication Setup
 
-### Pyxis API Authentication
+### Keytab Configuration
 
-The `/security:check-image-grade` command requires Red Hat Pyxis API access via Kerberos authentication.
+The container-grade-reporter tool requires Kerberos authentication via keytab file.
 
-**Required setup:**
+**Default keytab location:**
+```bash
+~/ossm-report-sa.keytab
+```
 
-1. **Obtain Service Account Keytab**
-   - Request keytab from Red Hat IT or your manager
-   - Keytab must have Pyxis API access permissions
-   - Default location: `~/ossm-report-sa.keytab`
+**Custom keytab location:**
+```bash
+export KEYTAB_PATH=/path/to/your/keytab
+```
 
-2. **Configure Keytab Path** (optional)
+**Obtaining a keytab:**
+
+1. Request service account from Red Hat IT via ServiceNow
+2. Generate keytab using Red Hat's IPA process
+3. Convert to base64 format:
    ```bash
-   export KEYTAB_PATH="/path/to/your/keytab"
+   base64 your-keytab.keytab > ~/ossm-report-sa.keytab
    ```
 
-3. **Test Authentication**
-   ```bash
-   kinit -kt ~/ossm-report-sa.keytab your-principal@REDHAT.COM
-   klist  # Verify ticket
-   ```
+**Testing authentication:**
 
-4. **Corporate SSL Configuration** (if needed)
-   ```bash
-   export VERIFY_SSL=false  # For corporate environments with self-signed certs
-   ```
+```bash
+# The Makefile handles authentication automatically
+cd ~/Code/container-grade-reporter
+make auth-setup
+```
 
-**Troubleshooting:**
-- Verify keytab permissions: `ls -la ~/ossm-report-sa.keytab` (should be 600)
-- Test Pyxis connectivity: `curl -k https://pyxis.engineering.redhat.com/v1/`
-- Contact Red Hat IT for keytab issues or API access problems
+## Usage Patterns
 
-## Integration Patterns
+### Basic Workflow
+
+```bash
+# 1. Create configuration file
+cat > my-releases.yaml << 'EOF'
+releases:
+  "OSSM 3.1":
+    components:
+      - repository: openshift-service-mesh/istio-cni-rhel9
+        minimal_tag: ["1.26"]
+EOF
+
+# 2. Generate report
+/security:image-grades my-releases.yaml
+```
 
 ### Security Review Workflow
 
 ```bash
-# 1. Check base image security before using in Dockerfile
-/security:check-image-grade registry.redhat.io/ubi8/ubi:latest
+# Check vulnerability grades before release
+/security:image-grades ./releases/ossm-3.1.yaml
 
-# 2. Research specific CVEs mentioned in security scans
-/security:search-cve CVE-2024-1234
-
-# 3. Validate security posture of application images
-/security:check-image-grade registry.redhat.io/myapp/api:v1.2.3
+# Review output for any grade C, D, or F containers
+# Take action based on grades
 ```
 
-### Incident Response
+### Continuous Monitoring
 
 ```bash
-# Rapidly assess impact of newly disclosed CVE
-/security:search-cve CVE-2024-XXXX
+# Regular weekly checks
+/security:image-grades ~/configs/production-images.yaml
 
-# Check if container images are affected
-/security:check-image-grade affected-image:latest
+# Compare results over time
+# Track grade improvements or degradations
 ```
 
-### Security-Driven Architecture Decisions
+### Multi-Release Tracking
+
+```yaml
+# all-releases.yaml
+releases:
+  "OSSM 3.1":
+    components:
+      - repository: openshift-service-mesh/istio-cni-rhel9
+        minimal_tag: ["1.26"]
+
+  "OSSM 3.0":
+    components:
+      - repository: openshift-service-mesh/istio-cni-rhel9
+        minimal_tag: ["1.24"]
+
+  "OSSM 2.6":
+    components:
+      - repository: openshift-service-mesh/istio-cni-rhel8
+        minimal_tag: ["2.6"]
+```
 
 ```bash
-# Compare base image options for new projects
-/security:check-image-grade registry.redhat.io/ubi8/ubi:latest
-/security:check-image-grade registry.redhat.io/ubi9/ubi:latest
-
-# Validate security improvements after updates
-/security:check-image-grade myapp:old-version
-/security:check-image-grade myapp:new-version
+/security:image-grades all-releases.yaml
 ```
+
+## Grade Interpretation
+
+The vulnerability grading system uses Red Hat's A-F scale:
+
+| Grade | Meaning | Indicator | Action |
+|-------|---------|-----------|--------|
+| **A** | Excellent - No known vulnerabilities | ✅ | Production ready |
+| **B** | Good - Minor vulnerabilities | ✅ | Acceptable for production |
+| **C** | Moderate - Some vulnerabilities | ⚠️ | Review and plan updates |
+| **D** | Poor - Significant vulnerabilities | ❌ | Update soon |
+| **F** | Critical - Severe vulnerabilities | ❌ | Immediate action required |
+
+**Recommendations by grade:**
+
+- **A-B**: Low risk, production ready. Monitor for updates.
+- **C**: Moderate risk, review recommended. Plan security updates.
+- **D**: High risk, address soon. Schedule immediate patching.
+- **F**: Critical risk, immediate attention required. Block deployments.
+
+## Multi-Architecture Support
+
+The plugin displays architecture information for each container image:
+
+**Grouped architectures** (when all have same grade/version):
+```
+openshift-service-mesh/istio-cni-rhel9
+  1.26 → Grade: B ✅ | v1.26.5 | amd64,arm64,ppc64le,s390x | End: 2025-08-22
+```
+
+**Separate architectures** (when grades/versions differ):
+```
+openshift-service-mesh/example-repo
+  2.6 → Grade: B ✅ | v2.6.5 | amd64 | End: 2025-08-20
+  2.6 → Grade: C ⚠️ | v2.6.4 | arm64 | End: 2025-08-15
+```
+
+This helps identify:
+- Architecture-specific vulnerabilities
+- Update inconsistencies across architectures
+- Deployment considerations for different platforms
+
+## Troubleshooting
+
+### Tool Not Found
+
+```
+Error: Container Grade Reporter not found
+```
+
+**Solutions:**
+1. Clone the repository: `git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git`
+2. Configure path: `/security:set-tool-path /path/to/container-grade-reporter`
+3. Or clone into workspace: `./container-grade-reporter/`
+
+### Authentication Failure
+
+```
+Error: Kerberos authentication failed
+```
+
+**Solutions:**
+1. Verify keytab exists: `ls ~/ossm-report-sa.keytab`
+2. Check keytab is base64 encoded
+3. Test manual authentication: `kinit -kt ~/keytab your-principal@IPA.REDHAT.COM`
+4. Contact Red Hat IT for keytab issues
+
+### Network Issues
+
+```
+Error: Cannot connect to pyxis.engineering.redhat.com
+```
+
+**Solutions:**
+1. Connect to Red Hat VPN
+2. Verify network access: `curl -k https://pyxis.engineering.redhat.com/v1/`
+3. Check proxy configuration
+
+### Invalid YAML
+
+```
+Error: Invalid YAML configuration file
+```
+
+**Solutions:**
+1. Validate YAML syntax: `python -c "import yaml; yaml.safe_load(open('config.yaml'))"`
+2. Check indentation (use spaces, not tabs)
+3. Verify structure matches releases/components format
+
+### Python Version
+
+```
+Error: Python 3.12 not found
+```
+
+**Solutions:**
+1. Install Python 3.12: `sudo dnf install python3.12`
+2. Or use available Python 3.x (Makefile will fallback automatically)
 
 ## Skills Reference
 
-### Pyxis Integration Skill
+### Container Grade Reporter Integration Skill
 
-**Location:** `skills/pyxis-integration/SKILL.md`
+**Location:** `skills/container-grade-reporter/SKILL.md`
 
 Comprehensive implementation guidance for:
-- Kerberos authentication patterns (adapted from OSSM Container Grade Reporter)
-- Pyxis API client implementation
-- Multi-architecture data handling
-- Corporate SSL configuration
-- Error handling and recovery
+- Tool installation and setup
+- Authentication configuration (Kerberos keytab)
+- YAML configuration format
+- Manual tool execution
+- JSON parsing and formatting
+- Advanced troubleshooting
+- Integration patterns
 
 **Use cases:**
-- Implementing custom Pyxis integrations
-- Troubleshooting authentication issues
-- Extending vulnerability analysis capabilities
-- Building batch processing workflows
+- First-time tool setup
+- Custom integration development
+- Advanced configuration scenarios
+- Troubleshooting complex issues
 
-## Corporate Environment Support
+## Advanced Usage
 
-### Red Hat Internal Networks
+### Manual Tool Execution
 
-- **SSL Configuration**: Supports `VERIFY_SSL=false` for corporate environments
-- **Proxy Support**: Compatible with corporate proxy configurations
-- **Authentication**: Integrated with Red Hat Kerberos infrastructure
-- **API Endpoints**: Uses official Red Hat internal APIs (Pyxis, Security Data)
+For debugging or custom workflows:
 
-### Security Considerations
+```bash
+cd ~/Code/container-grade-reporter
 
-- **Credential Security**: Keytab files stored with appropriate permissions (600)
-- **No Hardcoded Credentials**: All authentication via secure keytab files
-- **Audit Logging**: API access logged for security compliance
-- **Rate Limiting**: Respectful API usage to avoid service disruption
+# Generate JSON output
+make run-output OUTPUT=/tmp/grades.json CONFIG=~/my-config.yaml
+
+# Generate HTML email report
+make dry-run-email
+
+# Filter by grade
+make run-grade GRADES='C,D,F'
+```
+
+### JSON Output
+
+The tool generates JSON output that can be parsed for custom reporting:
+
+```bash
+# Generate report and save JSON
+/security:image-grades my-config.yaml
+
+# JSON is saved to /tmp/security-image-grades-<timestamp>/grades.json
+# Parse with jq or Python for custom analysis
+```
+
+### Environment Variables
+
+Customize tool behavior:
+
+```bash
+# Custom keytab location
+export KEYTAB_PATH=/path/to/keytab
+
+# Custom registry (default: registry.access.redhat.com)
+export REGISTRY=custom.registry.com
+
+# SSL verification (for corporate environments)
+export VERIFY_SSL=false
+```
 
 ## Contributing
 
-### Adding New Commands
+### Adding New Features
 
 Follow the ai-helpers command definition format:
 
@@ -234,26 +457,18 @@ Follow the ai-helpers command definition format:
 ### Extending Capabilities
 
 Potential enhancements:
-- **RHACS integration**: Red Hat Advanced Cluster Security scanning
-- **Policy enforcement**: Custom security policy validation
-- **Historical analysis**: Vulnerability trend tracking
-- **Batch processing**: Multiple image analysis workflows
-- **SBOM integration**: Software Bill of Materials analysis
-
-### Development Guidelines
-
-- Follow existing code patterns and error handling
-- Leverage OSSM Container Grade Reporter patterns for Pyxis integration
-- Maintain compatibility with corporate environments
-- Include comprehensive documentation and examples
-- Test authentication workflows thoroughly
+- **Historical tracking**: Compare grades over time
+- **Automated alerting**: Notify on grade changes
+- **Custom filtering**: More advanced repository selection
+- **Batch processing**: Multiple configuration files
+- **Integration**: Export to other systems (JIRA, spreadsheets)
 
 ## Support
 
 - **Issues**: https://github.com/openshift-eng/ai-helpers/issues
 - **Documentation**: ai-helpers repository README and AGENTS.md
-- **Authentication**: Contact Red Hat IT for keytab and API access issues
-- **API Questions**: Refer to Red Hat internal documentation for Pyxis and Security Data APIs
+- **Authentication**: Contact Red Hat IT for keytab and API access
+- **Tool Repository**: https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter
 
 ## License
 

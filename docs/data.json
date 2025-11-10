@@ -286,26 +286,26 @@
     {
       "name": "security",
       "description": "CVE analysis and container image vulnerability scanning for Red Hat ecosystem",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "commands": [
         {
-          "name": "check-image-grade",
-          "description": "Check container image vulnerability grade using Red Hat Pyxis API",
-          "synopsis": "/security:check-image-grade <image>",
-          "argument_hint": "<image>"
+          "name": "image-grades",
+          "description": "Generate container vulnerability grade report using container-grade-reporter",
+          "synopsis": "/security:image-grades <config.yaml>",
+          "argument_hint": "<config.yaml>"
         },
         {
-          "name": "search-cve",
-          "description": "Search and analyze CVE details using Red Hat Security Data API",
-          "synopsis": "/security:search-cve <CVE-ID>",
-          "argument_hint": "<CVE-ID>"
+          "name": "set-tool-path",
+          "description": "Configure the path to container-grade-reporter tool",
+          "synopsis": "/security:set-tool-path <path>",
+          "argument_hint": "<path>"
         }
       ],
       "skills": [
         {
-          "name": "Pyxis API Integration",
-          "id": "pyxis-integration",
-          "description": "Red Hat Pyxis API integration for container vulnerability data and authentication patterns"
+          "name": "Container Grade Reporter Integration",
+          "id": "container-grade-reporter",
+          "description": "Integration guide for using the container-grade-reporter tool to fetch and process container vulnerability grades"
         }
       ],
       "has_readme": true
