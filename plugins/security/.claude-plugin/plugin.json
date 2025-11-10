@@ -1,0 +1,8 @@
+{
+  "name": "security",
+  "description": "CVE analysis and container image vulnerability scanning for Red Hat ecosystem",
+  "version": "0.0.1",
+  "author": {
+    "name": "github.com/openshift-eng"
+  }
+}

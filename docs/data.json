@@ -284,6 +284,33 @@
       "has_readme": true
     },
     {
+      "name": "security",
+      "description": "CVE analysis and container image vulnerability scanning for Red Hat ecosystem",
+      "version": "0.0.1",
+      "commands": [
+        {
+          "name": "check-image-grade",
+          "description": "Check container image vulnerability grade using Red Hat Pyxis API",
+          "synopsis": "/security:check-image-grade <image>",
+          "argument_hint": "<image>"
+        },
+        {
+          "name": "search-cve",
+          "description": "Search and analyze CVE details using Red Hat Security Data API",
+          "synopsis": "/security:search-cve <CVE-ID>",
+          "argument_hint": "<CVE-ID>"
+        }
+      ],
+      "skills": [
+        {
+          "name": "Pyxis API Integration",
+          "id": "pyxis-integration",
+          "description": "Red Hat Pyxis API integration for container vulnerability data and authentication patterns"
+        }
+      ],
+      "has_readme": true
+    },
+    {
       "name": "utils",
       "description": "A generic utilities plugin serving as a catch-all for various helper commands",
       "version": "0.0.1",
