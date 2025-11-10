@@ -24,7 +24,7 @@ This command is useful for:
 - **Security monitoring**: Track vulnerability grades over time
 - **Compliance reporting**: Generate reports for security reviews
 
-The command uses the container-grade-reporter tool which must be installed and configured using `/security:set-tool-path` or cloned into the workspace.
+The command uses the container-grade-reporter tool which must be installed and configured using `/security:set-image-grade-tool-path` or cloned into the workspace.
 
 ## Implementation
 
@@ -42,7 +42,7 @@ The command uses the container-grade-reporter tool which must be installed and c
    - Check `../container-grade-reporter/` in parent directory
 
    **If not found:**
-   - Display error: "Container Grade Reporter not found. Please run /security:set-tool-path <path> or clone the repository into your workspace"
+   - Display error: "Container Grade Reporter not found. Please run /security:set-image-grade-tool-path <path> or clone the repository into your workspace"
    - Provide clone command: `git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git`
 
 3. **Verify Prerequisites**: Check for required tools and configuration
@@ -215,7 +215,7 @@ JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
 
 3. **Generate report after setting tool path**:
    ```
-   /security:set-tool-path ~/Code/container-grade-reporter
+   /security:set-image-grade-tool-path ~/Code/container-grade-reporter
    /security:image-grades ./my-releases.yaml
    ```
 
@@ -292,7 +292,7 @@ releases:
    Error: Container Grade Reporter not found.
 
    Please either:
-   1. Set tool path: /security:set-tool-path <path>
+   1. Set tool path: /security:set-image-grade-tool-path <path>
    2. Clone into workspace: git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git
 
    Searched locations:
@@ -366,7 +366,7 @@ releases:
 
 1. **Container Grade Reporter Tool**:
    - Clone: `git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git`
-   - Configure: `/security:set-tool-path /path/to/container-grade-reporter`
+   - Configure: `/security:set-image-grade-tool-path /path/to/container-grade-reporter`
 
 2. **Kerberos Authentication**:
    - Keytab file at `~/ossm-report-sa.keytab` or `$KEYTAB_PATH`

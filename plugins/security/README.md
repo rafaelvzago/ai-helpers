@@ -17,25 +17,25 @@ This plugin simplifies the workflow of checking container vulnerability grades b
 
 ## Commands
 
-### `/security:set-tool-path`
+### `/security:set-image-grade-tool-path`
 
 Configure the location of the container-grade-reporter tool.
 
 **Usage:**
 ```
-/security:set-tool-path <path>
+/security:set-image-grade-tool-path <path>
 ```
 
 **Examples:**
 ```bash
 # Configure tool path after cloning
-/security:set-tool-path ~/Code/container-grade-reporter
+/security:set-image-grade-tool-path ~/Code/container-grade-reporter
 
 # Configure with absolute path
-/security:set-tool-path /home/user/projects/container-grade-reporter
+/security:set-image-grade-tool-path /home/user/projects/container-grade-reporter
 
 # Configure workspace-relative path
-/security:set-tool-path ./container-grade-reporter
+/security:set-image-grade-tool-path ./container-grade-reporter
 ```
 
 **What it does:**
@@ -128,7 +128,7 @@ git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-rep
 
 ```bash
 # Set the tool location
-/security:set-tool-path ~/Code/container-grade-reporter
+/security:set-image-grade-tool-path ~/Code/container-grade-reporter
 ```
 
 **Step 4: Verify Keytab**
@@ -329,7 +329,7 @@ Error: Container Grade Reporter not found
 
 **Solutions:**
 1. Clone the repository: `git clone https://gitlab.cee.redhat.com/istio/servicemesh-qe/container-grade-reporter.git`
-2. Configure path: `/security:set-tool-path /path/to/container-grade-reporter`
+2. Configure path: `/security:set-image-grade-tool-path /path/to/container-grade-reporter`
 3. Or clone into workspace: `./container-grade-reporter/`
 
 ### Authentication Failure
