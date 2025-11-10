@@ -1,6 +1,6 @@
 ---
 description: Generate container vulnerability grade report using container-grade-reporter
-argument-hint: <config.yaml>
+argument-hint: <config.yaml> [--grade <grades>]
 ---
 
 ## Name
@@ -10,7 +10,7 @@ security:image-grades
 ## Synopsis
 
 ```
-/security:image-grades <config.yaml>
+/security:image-grades <config.yaml> [--grade <grades>]
 ```
 
 ## Description
@@ -77,7 +77,21 @@ The command uses the container-grade-reporter tool which must be installed and c
    - Parse JSON structure
    - Handle malformed JSON gracefully
 
-7. **Format Vulnerability Report**: Convert JSON to readable text format
+7. **Apply Grade Filter** (if `--grade` argument provided): Filter results by specified grades
+
+   - Check if `--grade` argument was provided
+   - Parse grade values: split by comma, normalize to uppercase (e.g., "b,c" → ["B", "C"])
+   - Validate each grade is in the valid set: A, B, C, D, F
+   - If invalid grade found, display error and list valid options
+   - Filter JSON data to only include entries where `grade` matches the filter
+   - If no matches found after filtering, display informative message
+   - Store filter information for report formatting
+
+8. **Format Vulnerability Report**: Convert JSON to readable text format
+
+   **Output format depends on whether grade filter is active:**
+
+   **Without filter (default):**
 
    **For each release in the configuration:**
    - Display release name as header
@@ -95,13 +109,22 @@ The command uses the container-grade-reporter tool which must be installed and c
    - Grade distribution (count by grade: A, B, C, D, F)
    - Highlight any critical grades (D, F)
 
-8. **Display Results**: Present formatted report to user
+   **With filter (when `--grade` is specified):**
+
+   Display simplified summary listing only matching images:
+   - Header showing filtered grade(s)
+   - For each matching image:
+     - Format: `repository:tag → Grade: X | version | architectures`
+   - Group entries by grade for readability
+   - Summary: Count of images per grade
+
+9. **Display Results**: Present formatted report to user
 
    - Use clear visual separators
    - Color-code grades: A/B=✅, C=⚠️, D/F=❌
    - Include actionable summary
 
-9. **Cleanup**: Remove temporary files but preserve JSON for reference
+10. **Cleanup**: Remove temporary files but preserve JSON for reference
 
    - Keep JSON output for debugging: inform user of location
    - Remove any temporary copied configuration files
@@ -142,6 +165,42 @@ Summary:
 JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
 ```
 
+**Filtered Output Example (with `--grade b`):**
+```
+🛡️ Filtered Container Vulnerability Report (Grade: B)
+Generated: 2025-11-10 15:45:23
+
+Grade B Images:
+════════════════════════════════════════
+openshift-service-mesh/istio-cni-rhel9:1.26 → Grade: B | v1.26.5 | amd64,arm64,ppc64le,s390x
+openshift-service-mesh/istio-pilot-rhel9:1.26 → Grade: B | v1.26.4 | amd64,arm64,ppc64le,s390x
+
+════════════════════════════════════════
+Summary: 2 images with grade B
+
+JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
+```
+
+**Filtered Output Example (with `--grade c,d,f`):**
+```
+🛡️ Filtered Container Vulnerability Report (Grades: C, D, F)
+Generated: 2025-11-10 15:45:23
+
+Grade C Images:
+════════════════════════════════════════
+openshift-service-mesh/kiali-rhel9:v2.11 → Grade: C | v2.11.3 | amd64,arm64
+
+Grade D Images:
+════════════════════════════════════════
+openshift-service-mesh/pilot-rhel8:2.6 → Grade: D | v2.6.8 | amd64,arm64,ppc64le,s390x
+
+════════════════════════════════════════
+Summary: 2 images (1×C, 1×D)
+⚠️  Action required: 1 repository with grade D needs immediate attention
+
+JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
+```
+
 ## Examples
 
 1. **Generate report for OSSM releases**:
@@ -160,12 +219,35 @@ JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
    /security:image-grades ./my-releases.yaml
    ```
 
+4. **Filter by specific grade**:
+   ```
+   /security:image-grades ~/releases.yaml --grade b
+   ```
+
+5. **Filter by multiple grades**:
+   ```
+   /security:image-grades ~/releases.yaml --grade c,d,f
+   ```
+
+6. **Check for critical vulnerabilities only**:
+   ```
+   /security:image-grades ./configs/ossm-3.1.yaml --grade d,f
+   ```
+
 ## Arguments
 
 - **$1**: YAML configuration file path
   - Required: Yes
   - Format: Path to YAML file with releases/components structure
   - Example: `~/configs/ossm.yaml`, `./releases.yaml`
+
+- **$2**: Grade filter (optional)
+  - Required: No
+  - Format: `--grade <grades>` where grades is a comma-separated list
+  - Valid grades: A, B, C, D, F (case-insensitive)
+  - Examples: `--grade b`, `--grade c,d,f`, `--grade D,F`
+  - When specified, only images with matching grades are displayed in simplified format
+  - When omitted, all grades are shown in detailed format
 
 ## Configuration File Format
 
@@ -257,6 +339,27 @@ releases:
 
    For manual troubleshooting, run:
    cd <tool-path> && make run
+   ```
+
+6. **Invalid grade filter**:
+   ```
+   Error: Invalid grade specified: 'X'
+
+   Valid grades are: A, B, C, D, F
+   Examples:
+   - /security:image-grades config.yaml --grade b
+   - /security:image-grades config.yaml --grade c,d,f
+   ```
+
+7. **No images matching filter**:
+   ```
+   No images found matching grade filter: B
+
+   The scan completed successfully but no images have grade B.
+   Try running without --grade filter to see all results:
+   /security:image-grades config.yaml
+
+   JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
    ```
 
 ## Prerequisites
