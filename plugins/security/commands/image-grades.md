@@ -1,6 +1,6 @@
 ---
 description: Generate container vulnerability grade report using container-grade-reporter
-argument-hint: <config.yaml> [--grade <grades>]
+argument-hint: <config.yaml> [--grade <grades>] [--email]
 ---
 
 ## Name
@@ -10,7 +10,7 @@ security:image-grades
 ## Synopsis
 
 ```
-/security:image-grades <config.yaml> [--grade <grades>]
+/security:image-grades <config.yaml> [--grade <grades>] [--email]
 ```
 
 ## Description
@@ -58,24 +58,41 @@ The command uses the container-grade-reporter tool which must be installed and c
 
 5. **Execute Container Grade Reporter**: Run the tool using Makefile
 
+   **Execution mode depends on `--email` flag:**
+
+   **Without `--email` (default - generate JSON output):**
    ```bash
    cd <tool-path>
    make run-output OUTPUT=<absolute-output-path>/grades.json CONFIG=<absolute-config-path>
    ```
+
+   **With `--email` (send email report):**
+   ```bash
+   cd <tool-path>
+   make email CONFIG=<absolute-config-path>
+   ```
+   If `--grade` filter is also specified, the email will include only filtered grades.
 
    **Note:** The Makefile automatically handles:
    - Python version detection (3.12+ or fallback to available Python 3.x)
    - Virtual environment setup
    - Dependency installation
    - Kerberos authentication with keytab
+   - Email delivery (when using `make email`)
 
    Display progress messages while tool runs (this may take several minutes for multiple repositories)
 
-6. **Parse JSON Output**: Read and parse the generated JSON file
+6. **Parse JSON Output**: Read and parse the generated JSON file (skipped if `--email` is used)
 
+   **Only when `--email` is NOT specified:**
    - Read `grades.json` from output directory
    - Parse JSON structure
    - Handle malformed JSON gracefully
+
+   **When `--email` IS specified:**
+   - Email is sent directly by the script
+   - Skip JSON parsing and formatting steps
+   - Proceed to confirmation message
 
 7. **Apply Grade Filter** (if `--grade` argument provided): Filter results by specified grades
 
@@ -83,11 +100,20 @@ The command uses the container-grade-reporter tool which must be installed and c
    - Parse grade values: split by comma, normalize to uppercase (e.g., "b,c" → ["B", "C"])
    - Validate each grade is in the valid set: A, B, C, D, F
    - If invalid grade found, display error and list valid options
+
+   **When `--email` is NOT specified:**
    - Filter JSON data to only include entries where `grade` matches the filter
    - If no matches found after filtering, display informative message
    - Store filter information for report formatting
 
-8. **Format Vulnerability Report**: Convert JSON to readable text format
+   **When `--email` IS specified:**
+   - Pass grade filter directly to the script via `--grade` parameter
+   - Script handles filtering internally before sending email
+   - Format: `make email CONFIG=<config> GRADES='B,C,D'`
+
+8. **Format Vulnerability Report**: Convert JSON to readable text format (skipped if `--email` is used)
+
+   **Only performed when `--email` is NOT specified.**
 
    **Output format depends on whether grade filter is active:**
 
@@ -120,9 +146,17 @@ The command uses the container-grade-reporter tool which must be installed and c
 
 9. **Display Results**: Present formatted report to user
 
+   **When `--email` is NOT specified:**
    - Use clear visual separators
    - Color-code grades: A/B=✅, C=⚠️, D/F=❌
    - Include actionable summary
+   - Show JSON output location
+
+   **When `--email` IS specified:**
+   - Display confirmation message
+   - Include email recipients and subject
+   - Note that HTML report was sent
+   - Provide location of generated HTML file for reference
 
 10. **Cleanup**: Remove temporary files but preserve JSON for reference
 
@@ -201,6 +235,46 @@ Summary: 2 images (1×C, 1×D)
 JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
 ```
 
+**Email Output Example (with `--email`):**
+```
+🛡️ Container Vulnerability Report - Email Sent
+Generated: 2025-11-10 15:45:23
+
+✉️  Email report has been sent successfully!
+
+Recipients: [configured in script]
+Subject: Container Vulnerability Report - 2025-11-10
+
+The HTML report includes:
+- 4 repositories analyzed
+- Grade distribution: 2×B, 1×C, 1×D
+- Detailed vulnerability information
+- Architecture-specific data
+
+HTML report saved: /tmp/security-image-grades-20251110-154523/vulnerability_report_20251110.html
+JSON data saved: /tmp/security-image-grades-20251110-154523/grades.json
+```
+
+**Email Output Example (with `--grade` and `--email`):**
+```
+🛡️ Filtered Container Vulnerability Report - Email Sent
+Generated: 2025-11-10 15:45:23
+
+Filter: Grades D, F
+
+✉️  Email report has been sent successfully!
+
+Recipients: [configured in script]
+Subject: Container Vulnerability Report (Grades: D, F) - 2025-11-10
+
+The HTML report includes:
+- 1 repository with critical vulnerabilities
+- Only showing grades: D, F
+- Detailed vulnerability information
+
+HTML report saved: /tmp/security-image-grades-20251110-154523/vulnerability_report_20251110.html
+```
+
 ## Examples
 
 1. **Generate report for OSSM releases**:
@@ -234,6 +308,21 @@ JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
    /security:image-grades ./configs/ossm-3.1.yaml --grade d,f
    ```
 
+7. **Send email report**:
+   ```
+   /security:image-grades ~/releases.yaml --email
+   ```
+
+8. **Send filtered email report**:
+   ```
+   /security:image-grades ~/releases.yaml --grade c,d,f --email
+   ```
+
+9. **Email only critical vulnerabilities to team**:
+   ```
+   /security:image-grades ./configs/ossm-3.1.yaml --grade d,f --email
+   ```
+
 ## Arguments
 
 - **$1**: YAML configuration file path
@@ -248,6 +337,14 @@ JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
   - Examples: `--grade b`, `--grade c,d,f`, `--grade D,F`
   - When specified, only images with matching grades are displayed in simplified format
   - When omitted, all grades are shown in detailed format
+
+- **$3**: Email flag (optional)
+  - Required: No
+  - Format: `--email`
+  - When specified, sends an HTML email report instead of displaying results in terminal
+  - Can be combined with `--grade` to send filtered reports
+  - Requires SMTP configuration in the container-grade-reporter tool
+  - Email recipients and SMTP settings are configured in the tool's configuration
 
 ## Configuration File Format
 
@@ -362,6 +459,31 @@ releases:
    JSON output saved: /tmp/security-image-grades-20251110-154523/grades.json
    ```
 
+8. **Email configuration not set**:
+   ```
+   Error: Email delivery failed - SMTP not configured
+
+   The --email flag requires SMTP configuration in the container-grade-reporter tool.
+   Please configure email settings in the tool's configuration file.
+
+   Configuration location: <tool-path>/config/email_config.yaml
+   See tool documentation for SMTP setup instructions.
+   ```
+
+9. **Email delivery failure**:
+   ```
+   Error: Failed to send email report
+
+   The report was generated successfully but email delivery failed.
+   Possible causes:
+   - SMTP server unreachable
+   - Authentication failure
+   - Invalid recipient addresses
+
+   HTML report saved locally: /tmp/security-image-grades-20251110-154523/vulnerability_report.html
+   You can manually share this file with recipients.
+   ```
+
 ## Prerequisites
 
 1. **Container Grade Reporter Tool**:
@@ -376,6 +498,12 @@ releases:
    - Access to Red Hat Pyxis API (pyxis.engineering.redhat.com)
    - Corporate network or VPN connection may be required
 
+4. **Email Configuration** (only required when using `--email` flag):
+   - SMTP server configuration in container-grade-reporter tool
+   - Email recipients list configured
+   - SMTP authentication credentials (if required)
+   - See container-grade-reporter documentation for email setup
+
 ## Notes
 
 - The tool execution may take several minutes depending on the number of repositories
@@ -383,5 +511,8 @@ releases:
 - JSON output is preserved for debugging and further processing
 - The Makefile handles all Python setup, dependencies, and authentication automatically
 - Multi-architecture data is grouped when all architectures have identical grades and versions
+- When using `--email`, the report is sent as HTML and no terminal output is displayed
+- Email reports can be combined with `--grade` filtering to send targeted alerts
+- The `make dry-run-email` target can be used manually to preview HTML without sending
 
 
