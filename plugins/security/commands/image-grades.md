@@ -67,11 +67,19 @@ The command uses the container-grade-reporter tool which must be installed and c
    ```
 
    **With `--email` (send email report):**
+   
+   Without grade filter:
    ```bash
    cd <tool-path>
    make email CONFIG=<absolute-config-path>
    ```
-   If `--grade` filter is also specified, the email will include only filtered grades.
+   
+   With grade filter:
+   ```bash
+   cd <tool-path>
+   make email-grade GRADES='<uppercase-grades>' CONFIG=<absolute-config-path>
+   ```
+   Example: `make email-grade GRADES='B,C,D' CONFIG=/path/to/config.yaml`
 
    **Note:** The Makefile automatically handles:
    - Python version detection (3.12+ or fallback to available Python 3.x)
@@ -107,9 +115,9 @@ The command uses the container-grade-reporter tool which must be installed and c
    - Store filter information for report formatting
 
    **When `--email` IS specified:**
-   - Pass grade filter directly to the script via `--grade` parameter
+   - Pass grade filter to the script using the `email-grade` make target
    - Script handles filtering internally before sending email
-   - Format: `make email CONFIG=<config> GRADES='B,C,D'`
+   - Format: `make email-grade GRADES='B,C,D' CONFIG=<config>`
 
 8. **Format Vulnerability Report**: Convert JSON to readable text format (skipped if `--email` is used)
 
@@ -513,6 +521,8 @@ releases:
 - Multi-architecture data is grouped when all architectures have identical grades and versions
 - When using `--email`, the report is sent as HTML and no terminal output is displayed
 - Email reports can be combined with `--grade` filtering to send targeted alerts
-- The `make dry-run-email` target can be used manually to preview HTML without sending
+- The script uses `make email` (without filter) or `make email-grade GRADES='X,Y,Z'` (with filter)
+- To preview HTML email without sending, run: `cd <tool-path> && make dry-run-email CONFIG=<config>`
+- All make targets automatically handle virtual environment setup, dependencies, and Kerberos auth
 
 

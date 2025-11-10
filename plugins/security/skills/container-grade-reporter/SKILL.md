@@ -165,6 +165,8 @@ releases:
 
 ```bash
 /security:image-grades ~/my-config.yaml
+/security:image-grades ~/my-config.yaml --grade b
+/security:image-grades ~/my-config.yaml --grade d,f --email
 ```
 
 **Manual execution using Makefile:**
@@ -172,22 +174,32 @@ releases:
 ```bash
 cd ~/Code/container-grade-reporter
 
-# Generate JSON output
+# Generate JSON output (default)
+make run CONFIG=tags.yaml
+
+# Generate JSON with custom output path
 make run-output OUTPUT=/tmp/grades.json CONFIG=~/my-config.yaml
 
-# Or use default tags.yaml in the repository
-make run
+# Filter by grades
+make run-grade GRADES='B,C,D' CONFIG=tags.yaml
+
+# Send email report
+make email CONFIG=tags.yaml
+
+# Send filtered email report
+make email-grade GRADES='D,F' CONFIG=tags.yaml
 ```
 
 **What the Makefile does automatically:**
 
 1. Detects Python version (3.12+ or falls back to available Python 3.x)
 2. Creates virtual environment in `/tmp/ossm-grade-reporter-venv`
-3. Installs dependencies from requirements.txt
+3. Installs dependencies from requirements.txt (including premailer for email)
 4. Decodes base64 keytab file
 5. Runs kinit for Kerberos authentication
 6. Executes main.py with specified parameters
 7. Cleans up temporary keytab files
+8. Handles all script execution via helper scripts in `scripts/` directory
 
 **Execution time:**
 
@@ -369,7 +381,13 @@ Generate reports for only specific grades:
 
 ```bash
 cd ~/Code/container-grade-reporter
-make run-grade GRADES='C,D,F'  # Only show problematic grades
+
+# Filter by specific grades
+make run-grade GRADES='C,D,F' CONFIG=tags.yaml
+
+# Convenience targets for common filters
+make run-critical CONFIG=tags.yaml   # Grades C, D, F only
+make run-safe CONFIG=tags.yaml       # Grades A, B only
 ```
 
 ### Filtering by Release
@@ -386,8 +404,17 @@ Process only a specific release:
 Generate HTML email reports (requires SMTP configuration):
 
 ```bash
-make dry-run-email  # Preview HTML without sending
-make email          # Send email report
+# Preview HTML without sending
+make dry-run-email CONFIG=tags.yaml
+
+# Send email report (all grades)
+make email CONFIG=tags.yaml
+
+# Send email with grade filtering
+make email-grade GRADES='C,D,F' CONFIG=tags.yaml
+
+# Send critical vulnerabilities only
+make email-critical CONFIG=tags.yaml
 ```
 
 ### Manual Python Execution
